@@ -1,0 +1,9 @@
+https://<username>:<password>@archive.cloudera.com/p/cdh7/7.1.9.1069/parcels/manifest.json
+
+https://<username>:<password>@archive.cloudera.com/p/cdh7/7.1.9.1069/parcels/CDH-7.1.9-1.cdh7.1.9.p1069.74330271-el8.parcel
+
+https://<username>:<password>@archive.cloudera.com/p/cdh7/7.1.9.1069/parcels/CDH-7.1.9-1.cdh7.1.9.p1069.74330271-el8.parcel.sha256
+
+https://<username>:<password>@archive.cloudera.com/p/cdh7/7.1.9.1069/parcels/CDH-7.1.9-1.cdh7.1.9.p1069.74330271-el9.parcel
+
+https://<username>:<password>@archive.cloudera.com/p/cdh7/7.1.9.1069/parcels/CDH-7.1.9-1.cdh7.1.9.p1069.74330271-el9.parcel.sha256
