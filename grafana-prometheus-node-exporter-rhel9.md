@@ -104,14 +104,28 @@ chown -R prometheus:prometheus /etc/prometheus /var/lib/prometheus
 ```bash
 cat > /etc/prometheus/prometheus.yml <<EOF
 global:
-  scrape_interval: 15s
+  scrape_interval: 10s
+  evaluation_interval: 10s
+  scrape_timeout: 10s
 
 scrape_configs:
-  - job_name: 'node'
+  - job_name: "prometheus"
     static_configs:
-      - targets: ['localhost:9100']
+      - targets: ["localhost:9090"]
+
+  - job_name: "node_exporter"
+    static_configs:
+      - targets: ["192.168.90.18:9100"]
         labels:
-          instance: 'sandbox.yikhwanz.com'
+          instance: 'Hypervisor 18'
+      - targets: ["192.168.90.19:9100"]
+        labels:
+          instance: 'Hypervisor 19'
+remote_write:
+  - url: "https://prometheus-prod-52-prod-ap-southeast-2.grafana.net/api/prom/push"
+    basic_auth:
+      username: "<grafana cloud id>"
+      password: "<grafana cloud token generated>"
 EOF
 ```
 
