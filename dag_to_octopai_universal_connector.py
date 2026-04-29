@@ -142,90 +142,81 @@ class ObjectRow:
 # =============================================================================
 
 SCHEMA_REGISTRY: Dict[Tuple[str, str, str], dict] = {
-
-    # ---- BigQuery: permkt dataset ----------------------------------------
-    ("dsi-projects-493408", "permkt", "permkt_stg_leads"): {
-        "provider": "BigQuery",
-        "server": "bigquery.googleapis.com",
-        "object_type": "TABLE",
-        "description": "Staging table – permkt leads (truncated each run)",
-        "columns": [
-            ("record_id",   "STRING",    "N", "Unique lead identifier"),
-            ("email",       "STRING",    "Y", "Lead email address"),
-            ("full_name",   "STRING",    "Y", "Lead full name"),
-            ("phone",       "STRING",    "Y", "Lead phone number"),
-            ("source",      "STRING",    "Y", "Marketing source channel"),
-            ("campaign_id", "STRING",    "Y", "Campaign identifier"),
-            ("lead_date",   "DATE",      "Y", "Lead creation date"),
-            ("status",      "STRING",    "Y", "Current lead status"),
-            ("updated_at",  "TIMESTAMP", "N", "Row last updated timestamp"),
-        ],
-    },
-    ("dsi-projects-493408", "permkt", "permkt_leads"): {
-        "provider": "BigQuery",
-        "server": "bigquery.googleapis.com",
-        "object_type": "TABLE",
-        "description": "Final deduplicated leads table",
-        "columns": [
-            ("record_id",   "STRING",    "N", "Unique lead identifier (merge key)"),
-            ("email",       "STRING",    "Y", "Lead email address"),
-            ("full_name",   "STRING",    "Y", "Lead full name"),
-            ("phone",       "STRING",    "Y", "Lead phone number"),
-            ("source",      "STRING",    "Y", "Marketing source channel"),
-            ("campaign_id", "STRING",    "Y", "Campaign identifier"),
-            ("lead_date",   "DATE",      "Y", "Lead creation date"),
-            ("status",      "STRING",    "Y", "Current lead status"),
-            ("updated_at",  "TIMESTAMP", "N", "Timestamp of last upsert"),
-        ],
-    },
-
-    # ---- GCS bucket: permkt ----------------------------------------------
-    ("permkt-gcs", "permkt", "unprocessed"): {
-        "provider": "GCS",
-        "server": "storage.googleapis.com",
-        "object_type": "FILE",
-        "description": "GCS landing zone – raw CSV files from proxy",
-        "columns": [
-            ("record_id",   "STRING", "N", "Unique identifier"),
-            ("email",       "STRING", "Y", "Lead email"),
-            ("full_name",   "STRING", "Y", "Lead full name"),
-            ("phone",       "STRING", "Y", "Lead phone"),
-            ("source",      "STRING", "Y", "Source channel"),
-            ("campaign_id", "STRING", "Y", "Campaign ID"),
-            ("lead_date",   "STRING", "Y", "Lead date (raw CSV string)"),
-            ("status",      "STRING", "Y", "Lead status"),
-        ],
-    },
-
-    # ---- Local filesystem: proxy server ----------------------------------
-    ("local-proxy", "filesystem", "unprocessed"): {
-        "provider": "LocalFilesystem",
-        "server": "permkt-proxy-server",
-        "object_type": "FILE",
-        "description": "Local unprocessed folder on proxy server (/home/permkt/unprocessed)",
-        "columns": [
-            ("record_id",   "STRING", "N", "Unique identifier"),
-            ("email",       "STRING", "Y", "Lead email"),
-            ("full_name",   "STRING", "Y", "Lead full name"),
-            ("phone",       "STRING", "Y", "Lead phone"),
-            ("source",      "STRING", "Y", "Source channel"),
-            ("campaign_id", "STRING", "Y", "Campaign ID"),
-            ("lead_date",   "STRING", "Y", "Lead date"),
-            ("status",      "STRING", "Y", "Lead status"),
-        ],
-    },
-
-    # ---- Add more objects below as needed --------------------------------
-    # Example: another BigQuery table
-    # ("my-project", "my_dataset", "my_table"): {
+    # ==========================================================================
+    # HOW TO FILL THIS REGISTRY
+    # ==========================================================================
+    # This is the ONLY section you need to edit when adding new DAGs or tables.
+    #
+    # The script auto-discovers all .py DAG files in the same folder and parses
+    # operators, SQL, and GCS URIs from the code automatically.
+    #
+    # Column-level schema CANNOT be read from DAG files — DAGs only reference
+    # table names, not their columns.  Register each table/file here to get
+    # column-level lineage in Octopai.  If a table is NOT registered, the script
+    # still runs but emits wildcard "*" for column names instead.
+    #
+    # KEY   : (database_or_project, dataset_or_schema, table_or_object_name)
+    # VALUE : {
+    #   "provider"    : BigQuery | GCS | PostgreSQL | MySQL | S3 | LocalFilesystem
+    #   "server"      : endpoint hostname
+    #   "object_type" : TABLE | VIEW | FILE
+    #   "description" : free text shown in Octopai catalog
+    #   "columns"     : list of (column_name, data_type, is_nullable, description)
+    #                   is_nullable = "Y" or "N"
+    # }
+    #
+    # COMMON PROVIDER + SERVER PAIRS:
+    #   BigQuery        → server: "bigquery.googleapis.com"
+    #   GCS             → server: "storage.googleapis.com"
+    #   S3              → server: "s3.amazonaws.com"
+    #   Snowflake       → server: "account.snowflakecomputing.com"
+    #   PostgreSQL      → server: your-db-host.internal
+    #   MySQL           → server: your-db-host.internal
+    #   LocalFilesystem → server: your-server-hostname
+    #
+    # --------------------------------------------------------------------------
+    # EXAMPLE 1 — BigQuery table:
+    # --------------------------------------------------------------------------
+    # ("my-gcp-project", "my_dataset", "my_table"): {
     #     "provider": "BigQuery",
     #     "server": "bigquery.googleapis.com",
     #     "object_type": "TABLE",
-    #     "description": "...",
+    #     "description": "Short description for the Octopai catalog",
     #     "columns": [
-    #         ("col1", "STRING", "N", "description"),
+    #         ("id",         "INTEGER",   "N", "Primary key"),
+    #         ("name",       "STRING",    "Y", "Full name"),
+    #         ("created_at", "TIMESTAMP", "N", "Row creation timestamp"),
     #     ],
     # },
+    # --------------------------------------------------------------------------
+    # EXAMPLE 2 — GCS landing zone file:
+    # --------------------------------------------------------------------------
+    # ("my-bucket-gcs", "my-bucket", "landing"): {
+    #     "provider": "GCS",
+    #     "server": "storage.googleapis.com",
+    #     "object_type": "FILE",
+    #     "description": "Raw CSV files dropped into the GCS landing folder",
+    #     "columns": [
+    #         ("col1", "STRING", "N", "Unique key"),
+    #         ("col2", "STRING", "Y", "Value field"),
+    #     ],
+    # },
+    # --------------------------------------------------------------------------
+    # EXAMPLE 3 — Local filesystem on proxy server:
+    # --------------------------------------------------------------------------
+    # ("local-myserver", "filesystem", "incoming"): {
+    #     "provider": "LocalFilesystem",
+    #     "server": "myserver.internal",
+    #     "object_type": "FILE",
+    #     "description": "Incoming CSV folder on the proxy server",
+    #     "columns": [
+    #         ("col1", "STRING", "N", "Unique key"),
+    #     ],
+    # },
+    # ==========================================================================
+    # ADD YOUR TABLE / OBJECT DEFINITIONS BELOW THIS LINE
+    # ==========================================================================
+
 }
 
 
@@ -747,25 +738,52 @@ class DAGParser:
 
         # --- Local → GCS upload ---
         if is_gcs_upload:
+            # Extract local base dir from source (e.g. BASE_DIR = "/home/permkt")
+            base_dir_m  = re.search(r'BASE_DIR\s*=\s*["\']([^"\']+)["\']', self.source)
+            # Extract unprocessed folder path
+            unproc_m    = re.search(r'UNPROCESSED_DIR\s*=\s*os\.path\.join\([^,]+,\s*["\']([^"\']+)["\']', self.source)
+            # Extract GCS bucket name
+            bucket_m    = re.search(r'GCS_BUCKET_NAME\s*=\s*["\']([^"\']+)["\']', self.source) \
+                       or re.search(r'BUCKET\s*=\s*["\']([^"\']+)["\']', self.source)
+            # Extract GCS prefix
+            prefix_m    = re.search(r'GCS_PREFIX\s*=\s*["\']([^"\']+)["\']', self.source)
+
+            base_dir    = base_dir_m.group(1)  if base_dir_m  else "/data"
+            unproc_dir  = unproc_m.group(1)    if unproc_m    else "unprocessed"
+            gcs_bucket  = bucket_m.group(1)    if bucket_m    else "gcs-bucket"
+            gcs_prefix  = prefix_m.group(1).strip("/") if prefix_m else "unprocessed"
+
+            local_path  = f"{base_dir}/{unproc_dir}"
+            # Derive a clean server/project label from the base_dir (e.g. /home/permkt → permkt-server)
+            server_name = base_dir.strip("/").replace("/", "-") + "-server"
+            # Use bucket as the "schema" namespace
+            gcs_db      = f"{gcs_bucket}-gcs"
+
             src = {
-                "provider": "LocalFilesystem", "server": "permkt-proxy-server",
-                "database": "local-proxy",     "schema": "filesystem",
-                "object":   "unprocessed",     "object_type": "FILE",
-                "component": "/home/permkt/unprocessed",
+                "provider":    "LocalFilesystem",
+                "server":      server_name,
+                "database":    "local-" + base_dir.strip("/").split("/")[-1],
+                "schema":      "filesystem",
+                "object":      unproc_dir,
+                "object_type": "FILE",
+                "component":   local_path,
             }
             tgt = {
-                "provider": "GCS",             "server": "storage.googleapis.com",
-                "database": "permkt-gcs",      "schema": "permkt",
-                "object":   "unprocessed",     "object_type": "FILE",
-                "component": "gs://permkt/unprocessed",
+                "provider":    "GCS",
+                "server":      "storage.googleapis.com",
+                "database":    gcs_db,
+                "schema":      gcs_bucket,
+                "object":      gcs_prefix,
+                "object_type": "FILE",
+                "component":   f"gs://{gcs_bucket}/{gcs_prefix}/",
             }
             self._emit_link(task_id, src, tgt,
-                            desc=f"Python: upload CSV from local to GCS [{task_id}]")
-            self._emit_objects("local-proxy",  "filesystem", "unprocessed",
-                               provider="LocalFilesystem", server="permkt-proxy-server",
+                            desc=f"Python: upload CSV from {local_path} to gs://{gcs_bucket}/{gcs_prefix} [{task_id}]")
+            self._emit_objects(src["database"], src["schema"], src["object"],
+                               provider=src["provider"], server=src["server"],
                                object_type="FILE")
-            self._emit_objects("permkt-gcs", "permkt", "unprocessed",
-                               provider="GCS", server="storage.googleapis.com",
+            self._emit_objects(tgt["database"], tgt["schema"], tgt["object"],
+                               provider=tgt["provider"], server=tgt["server"],
                                object_type="FILE")
 
         # --- GCS folder move (inprocess/processed) ---
@@ -777,7 +795,7 @@ class DAGParser:
 
             src_prefix = src_prefix_m.group(1).strip("/") if src_prefix_m else "unprocessed"
             tgt_prefix = tgt_prefix_m.group(1).strip("/") if tgt_prefix_m else "processed"
-            bucket     = bucket_m.group(1) if bucket_m else "permkt"
+            bucket     = bucket_m.group(1) if bucket_m else "gcs-bucket"
 
             src = {
                 "provider": "GCS", "server": "storage.googleapis.com",
